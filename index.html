@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+    <head>
+        <meta charset="utf-8" />
+        <title>JSON SHOW</title>
+        <link rel="stylesheet" href="css/bootstrap.min.css">
+        <link rel="stylesheet" href="css/jquery.dataTables.min.css">
+        <link rel="stylesheet" href="css/style.css">
+        <script src="js/jquery.min.js"></script>
+        <script src="js/bootstrap.min.js"></script>
+        <script src="js/jquery.dataTables.min.js"></script>
+    </head>
+
+    <body>
+        <div class="container mt-5">
+            <div class="row text-center">
+
+                <div class="form-group">
+                    <label for="" class="job_title">Job Name</label>
+                    <div class="job_name" id="jobname">
+
+                    </div>
+                </div>
+            </div>
+
+            <div class="row text-center">
+
+                <div class="form-group">
+                    <label for="" class="job_title">Account ID</label>
+                    <div class="job_name" id="accountID">
+
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="form-group form-inline">
+                    <label for="">Substarct Value</label>
+                    <input type="number" name="substract" class="form-control mx-5" id="substract" placeholder="Please input the substract value">
+                </div>
+            </div>
+
+            <div class="row mt-5">
+                <div class="form-group" style="width: 100%;">
+                    <label for="">Speak Table</label>
+                    <table id = "speakTable" class="table table-striped">                
+                        <thead>
+                            <tr>
+                                <th class="text-center">START</th>                           
+                                <th class="text-center">SPEAKER</th>      
+                                <th class="text-center">CONTENTS</th>                      
+                            </tr>
+                        </thead>
+                        <tbody id = "speakTbody">
+
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="form-group">
+                    <label for="">Transcripts</label>
+                    <div id ="result_transcripts">
+
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mt-5">
+                <div class="form-group" style="width: 100%;">
+                    <label for="">Speaking History</label>
+                    <table id = "speakerTable" class="table table-striped text-center">                
+                        <thead>
+                            <tr>
+                                <th>START TIME</th>                           
+                                <th>END TIME</th>      
+                                <th>SPEAKER</th>   
+                                <th>Text</th>                   
+                            </tr>
+                        </thead>
+                        <tbody id = "speakerTbody">
+
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            $(document).ready(function () {
+
+                var oXHR = new XMLHttpRequest();
+                oXHR.onreadystatechange = reportStatus;
+                oXHR.open("GET", "json/InterviewOutput.json", true); 
+                oXHR.send();
+
+                var substract = 0;
+
+                $('#substract').change(function(){
+                    substract = $('#substract').val();
+                    console.log(substract);     
+                    $("#speakerTbody tr").remove(); 
+                    $("#speakTbody tr").remove(); 
+
+                    var oXHR = new XMLHttpRequest();
+                    oXHR.onreadystatechange = reportStatus;
+                    oXHR.open("GET", "json/InterviewOutput.json", true); 
+                    oXHR.send();
+
+                    function reportStatus() {
+                        if (oXHR.readyState == 4) {		
+                            createTable(this.responseText); 
+                        }
+
+                        console.log("ok");
+
+                        function createTable(jsonData){
+                            var originJson = jsonData;
+                            var convert = JSON.parse(originJson);
+
+                            var jobname = convert.jobName;
+                            document.getElementById("jobname").innerHTML = jobname;
+                            
+                            var accountId = convert.accountId;
+                            document.getElementById("accountID").innerHTML = accountId;
+                            var results = convert.results;
+
+                            var speaker_labels = results.speaker_labels;
+                        
+                            var speakerList = [];
+                                StartTimeList = [];
+                                EndTimeList = [];
+                                SpeakersList = [];
+
+                            for(j = 0; j < (speaker_labels.segments).length; j++){
+                                var speaker = speaker + j+1;
+                                var timeArr = timeArr + j;
+                                var speaker = speaker_labels.segments[j].items;
+
+                                speakerList.push(speaker[0].speaker_label);
+
+                                var timeArr = [];
+                            
+                                for( var i = 0; i<speaker.length; i++){   
+                                    StartTimeList.push(speaker[i].start_time);
+                                    EndTimeList.push(speaker[i].end_time);
+                                    SpeakersList.push(speaker[i].speaker_label);
+                                    timeArr.push(parseFloat(speaker[i].end_time).toFixed(1));
+                                }
+                            }
+
+                            var result_transcript = results.transcripts[0].transcript;
+                            document.getElementById("result_transcripts").innerHTML = result_transcript;
+                            var transArray = result_transcript.split("");                       
+                            translength = transArray.length;                       
+
+                            var start = [];
+                            var end = [];                        
+                            for(k = 0; k < results.speaker_labels.segments.length; k++){
+                                var s = speaker_labels.segments[k].items.length-1;                          
+                                start.push(speaker_labels.segments[k].items[0].start_time);
+                                end.push(speaker_labels.segments[k].items[s].end_time)
+                            }
+                            step = translength / end[end.length-1];
+
+                            startTime = [0];
+                            for(i = 1; i<start.length; i++){
+                                startTime.push((start[i] * step-substract).toFixed(0)); 
+                            }
+                            
+                            speakTest = [];
+                            for(i = 0; i < EndTimeList.length; i++){
+                                speakTest.push((EndTimeList[i] * step).toFixed(0));
+                            }
+
+                            AnswerList = [];
+                            var k = 0;
+                            for(i = 0;  i < speakTest.length; i++){
+                                AnswerList.push(transArray.slice(k, speakTest[i]));
+                                k = speakTest[i];
+                            }
+
+                            AnswerLists = [];
+                            for(i = 0; i < AnswerList.length; i++){
+                                var str = "";
+                                for(j = 0; j < AnswerList[i].length; j++){
+                                    str = str + (AnswerList[i])[j];
+                                }
+                                AnswerLists.push(str);
+                            }
+
+                            Answer = [];
+                            var j = 0;
+                            for(i = 0; i <startTime.length; i++){
+                                Answer.push(transArray.slice(j, startTime[i]));
+                                j = startTime[i];
+                            }
+
+                            Answer.push(transArray.slice(parseInt(startTime[startTime.length-1]), translength));
+                            Answer.splice(0, 1);
+
+                            realAnswer = [];
+                            for(i =0; i < Answer.length; i++){
+                                answerTT = "";
+                                for(j = 0; j < Answer[i].length; j++){
+                                    answerTT =answerTT + (Answer[i])[j];
+                                }
+                                realAnswer.push(answerTT);
+                            }
+
+                            var speakTbody = document.getElementById("speakTbody");
+                        
+                            for( i = 0; i < realAnswer.length; i++ ){
+                                var tr = document.createElement("tr");    
+                                speakTbody.appendChild(tr);                   
+                                var td1 = document.createElement("td");
+                                var td2 = document.createElement("td");
+                                var td3 = document.createElement("td");
+                                
+                                td1.innerHTML = start[i];
+                                td2.innerHTML = speakerList[i];                            
+                                td3.innerHTML = realAnswer[i];
+                                tr.appendChild(td1);
+                                tr.appendChild(td2);
+                                tr.appendChild(td3);   
+                            }
+
+                            var speakerTbody = document.getElementById("speakerTbody");
+                            for( var i = 0; i<StartTimeList.length; i++){   
+                                var tr = document.createElement("tr");    
+                                    speakerTbody.appendChild(tr);                   
+                                    var td1 = document.createElement("td");
+                                    var td2 = document.createElement("td");
+                                    var td3 = document.createElement("td");
+                                    var td4 = document.createElement("td");
+                                    td1.innerHTML = StartTimeList[i];
+                                    td2.innerHTML = EndTimeList[i];                            
+                                    td3.innerHTML = SpeakersList[i];
+                                    td4.innerHTML = AnswerLists[i];
+                                tr.appendChild(td1);
+                                tr.appendChild(td2);
+                                tr.appendChild(td3);   
+                                tr.appendChild(td4);
+                            }
+                        }
+                    }
+                });
+
+                function reportStatus() {
+                    if (oXHR.readyState == 4) {		
+                        createTable(this.responseText); 
+                    }
+
+                    function createTable(jsonData){
+                        var originJson = jsonData;
+                        var convert = JSON.parse(originJson);
+
+                        var jobname = convert.jobName;
+                        document.getElementById("jobname").innerHTML = jobname;
+                        
+                        var accountId = convert.accountId;
+                        document.getElementById("accountID").innerHTML = accountId;
+                        var results = convert.results;
+
+                        var speaker_labels = results.speaker_labels;
+                       
+                        var speakerList = [];
+                            StartTimeList = [];
+                            EndTimeList = [];
+                            SpeakersList = [];
+
+                        for(j = 0; j < (speaker_labels.segments).length; j++){
+                            var speaker = speaker + j+1;
+                            var timeArr = timeArr + j;
+                            var speaker = speaker_labels.segments[j].items;
+
+                            speakerList.push(speaker[0].speaker_label);
+
+                            var timeArr = [];
+                          
+                            for( var i = 0; i<speaker.length; i++){   
+                                StartTimeList.push(speaker[i].start_time);
+                                EndTimeList.push(speaker[i].end_time);
+                                SpeakersList.push(speaker[i].speaker_label);
+                                timeArr.push(parseFloat(speaker[i].end_time).toFixed(1));
+                            }
+                        }
+
+                        var result_transcript = results.transcripts[0].transcript;
+                        document.getElementById("result_transcripts").innerHTML = result_transcript;
+                        var transArray = result_transcript.split("");                       
+                        translength = transArray.length;                       
+
+                        var start = [];
+                        var end = [];                        
+                        for(k = 0; k < results.speaker_labels.segments.length; k++){
+                            var s = speaker_labels.segments[k].items.length-1;                          
+                            start.push(speaker_labels.segments[k].items[0].start_time);
+                            end.push(speaker_labels.segments[k].items[s].end_time)
+                        }
+                        step = translength / end[end.length-1];
+
+                        startTime = [0];
+                        for(i = 1; i<start.length; i++){
+                            // startTime.push((start[i] * step-32.5).toFixed(0)); 
+                            startTime.push((start[i] * step).toFixed(0)); 
+                        }
+                        
+                        speakTest = [];
+                        for(i = 0; i < EndTimeList.length; i++){
+                            speakTest.push((EndTimeList[i] * step).toFixed(0));
+                        }
+
+                        AnswerList = [];
+                        var k = 0;
+                        for(i = 0;  i < speakTest.length; i++){
+                            AnswerList.push(transArray.slice(k, speakTest[i]));
+                            k = speakTest[i];
+                        }
+
+                        AnswerLists = [];
+                        for(i = 0; i < AnswerList.length; i++){
+                            var str = "";
+                            for(j = 0; j < AnswerList[i].length; j++){
+                                str = str + (AnswerList[i])[j];
+                            }
+                            AnswerLists.push(str);
+                        }
+
+                        Answer = [];
+                        var j = 0;
+                        for(i = 0; i <startTime.length; i++){
+                            Answer.push(transArray.slice(j, startTime[i]));
+                            j = startTime[i];
+                        }
+
+                        Answer.push(transArray.slice(parseInt(startTime[startTime.length-1]), translength));
+                        Answer.splice(0, 1);
+
+                        realAnswer = [];
+                        for(i =0; i < Answer.length; i++){
+                            answerTT = "";
+                            for(j = 0; j < Answer[i].length; j++){
+                                answerTT =answerTT + (Answer[i])[j];
+                            }
+                            realAnswer.push(answerTT);
+                        }
+
+                        var speakTbody = document.getElementById("speakTbody");
+                       
+                        for( i = 0; i < realAnswer.length; i++ ){
+                            var tr = document.createElement("tr");    
+                            speakTbody.appendChild(tr);                   
+                            var td1 = document.createElement("td");
+                            var td2 = document.createElement("td");
+                            var td3 = document.createElement("td");
+                            
+                            td1.innerHTML = start[i];
+                            td2.innerHTML = speakerList[i];                            
+                            td3.innerHTML = realAnswer[i];
+                            tr.appendChild(td1);
+                            tr.appendChild(td2);
+                            tr.appendChild(td3);   
+                        }
+
+                        var speakerTbody = document.getElementById("speakerTbody");
+                        for( var i = 0; i<StartTimeList.length; i++){   
+                            var tr = document.createElement("tr");    
+                                speakerTbody.appendChild(tr);                   
+                                var td1 = document.createElement("td");
+                                var td2 = document.createElement("td");
+                                var td3 = document.createElement("td");
+                                var td4 = document.createElement("td");
+                                td1.innerHTML = StartTimeList[i];
+                                td2.innerHTML = EndTimeList[i];                            
+                                td3.innerHTML = SpeakersList[i];
+                                td4.innerHTML = AnswerLists[i];
+                            tr.appendChild(td1);
+                            tr.appendChild(td2);
+                            tr.appendChild(td3);   
+                            tr.appendChild(td4);
+                        }
+                    }
+
+                  
+
+
+                }
+                
+                
+            });
+        </script>    
+    </body>
+</html>

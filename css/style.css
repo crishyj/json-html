@@ -1,0 +1,19 @@
+.form-group{
+    width: 100%;
+}
+
+label{
+    text-align: center;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.job_title{
+    font-size: 32px;
+    font-weight: 600;
+}
+
+.job_name{
+    font-size: 22px;
+    font-weight: 600;
+}
